@@ -18,17 +18,20 @@ namespace Microsoft.eShopWeb.Web.Services
 				new Azure.AzureKeyCredential(configuration["EventGrid:Key"]));
 		}
 
-		public void PublishOrderItemsReserver(Dictionary<string, int> details)
+		public void PublishOrderItemsReserver(string email, Dictionary<string, int> details)
 		{
+			var random = new Random();
+			var orderId = random.Next(100000, 999999);
+
 			var events = new List<CloudEvent>()
 			{
 				new CloudEvent(
 					"/cloudevents/eshop/source",
 					"Eshop.OrderItemReserver",
-					details),
+					new { Email = email, OrderId = orderId, Details = details }),
 			};
 
-			var response = client.SendEvents(events);
+			client.SendEvents(events);
 		}
 	}
 }
