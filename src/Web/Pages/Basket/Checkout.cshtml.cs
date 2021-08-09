@@ -27,13 +27,15 @@ namespace Microsoft.eShopWeb.Web.Pages.Basket
         private readonly IBasketViewModelService _basketViewModelService;
         private readonly IAppLogger<CheckoutModel> _logger;
         private readonly EventGridService _eventGridService;
+        private readonly OrderDetailsService _orderDetailsService;
 
         public CheckoutModel(IBasketService basketService,
             IBasketViewModelService basketViewModelService,
             SignInManager<ApplicationUser> signInManager,
             IOrderService orderService,
             IAppLogger<CheckoutModel> logger,
-            EventGridService eventGridService)
+            EventGridService eventGridService,
+            OrderDetailsService orderDetailsService)
         {
             _basketService = basketService;
             _signInManager = signInManager;
@@ -41,6 +43,7 @@ namespace Microsoft.eShopWeb.Web.Pages.Basket
             _basketViewModelService = basketViewModelService;
             _logger = logger;
             _eventGridService = eventGridService;
+            _orderDetailsService = orderDetailsService;
         }
 
         public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
@@ -61,10 +64,16 @@ namespace Microsoft.eShopWeb.Web.Pages.Basket
                     return BadRequest();
                 }
 
+                var adress = new Address("123 Main St.", "Kent", "OH", "United States", "44240");
                 var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
                 await _basketService.SetQuantities(BasketModel.Id, updateModel);
-                await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+                await _orderService.CreateOrderAsync(BasketModel.Id, adress);
                 await _basketService.DeleteBasketAsync(BasketModel.Id);
+
+                // Send Order Details
+                await _orderDetailsService.SaveAsync(adress.ToString(), updateModel, BasketModel.Total());
+
+                // Create Order
                 _eventGridService.PublishOrderItemsReserver(User.Identity.Name, updateModel);
             }
             catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)

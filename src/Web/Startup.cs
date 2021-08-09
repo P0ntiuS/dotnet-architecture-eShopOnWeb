@@ -117,6 +117,7 @@ namespace Microsoft.eShopWeb.Web
             services.AddCoreServices(Configuration);
             services.AddWebServices(Configuration);
 
+            services.AddScoped<OrderDetailsService>();
             services.AddScoped<EventGridService>();
             
             // Add memory cache services
